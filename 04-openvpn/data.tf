@@ -13,7 +13,7 @@ data "aws_ami" "ami_info" {
   owners = ["620549678005"]
   filter {
     name = "name"
-    values = ["Devops"]
+    values = ["ami name"] # we need to take ami id name it unique name so it will filter out the ami
   }
   filter {
     name = "root-device-type"
@@ -23,5 +23,6 @@ data "aws_ami" "ami_info" {
     name = "virtualization-type"
     values = ["hvm"]
   }
+
 
 }
