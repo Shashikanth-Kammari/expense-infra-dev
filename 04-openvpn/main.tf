@@ -1,3 +1,8 @@
+resource "aws_key_pair" "name" {
+  key_name = "openvpn"
+  public_key = file("~/shash/devops.pub")
+}
+
 module "vpn" {
   source  = "terraform-aws-modules/ec2-instance/aws"
 
