@@ -1,11 +1,11 @@
-resource "aws_key_pair" "name" {
+resource "aws_key_pair" "vpn"{
   key_name = "openvpn"
   public_key = file("~/shash/devops.pub")
 }
 
 module "vpn" {
   source  = "terraform-aws-modules/ec2-instance/aws"
-
+  key_name = aws_key_pair.vpn.key_name
   name = "${var.project_name}-${var.environment}-vpn"
 
   instance_type = "t3.micro"
@@ -18,7 +18,7 @@ module "vpn" {
   tags = merge(
     var.common_tags,
     {
-        Name = "${var.project_name}-${var.environment}-bastion"
+        Name = "${var.project_name}-${var.environment}-vpn"
     }
   )
 }
