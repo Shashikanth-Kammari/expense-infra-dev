@@ -24,7 +24,7 @@ resource "aws_lb_listener" "http" {
   default_action {
     type = "fixed-response"
 
-    fixed-response {
+    fixed_response {
       content_type  = "443"
       message_body  = "this is fised respose from app alb"
       status_code   = "HTTP_301"
