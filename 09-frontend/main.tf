@@ -22,13 +22,8 @@ resource "null_resource" "frontend_delete" {
   # Changes to any instance of the cluster requires re-provisioning
   triggers = {
     instance_ids = module.frontend.instance_id
-#   }
-  connection {
-    type        = "ssh"
-    user        = "ec2-user"
-    password    = "Needto_give_password"
-    host        = module.frontend.public_ip
   }
+
   provisioner "file" {
     source      = "${var.common_tags.component}.sh"
     destination = "/tmp/${var.common_tags.component}.sh"
@@ -38,7 +33,7 @@ resource "null_resource" "frontend_delete" {
   provisioner "local-exec" {
       command = "aws ec2 terminate-instances --instance-ids ${module.frontend.frontend_id}"
     }
-    depends_on = [aws-ami_from_instance.backend]
+    depends_on = [aws-ami_from_instance.frontend]
 }  
 
 resource "aws_ec2_instance_state" "frontend" {
@@ -55,23 +50,23 @@ resource "aws_ami_from_instance" "frontend" {
   depends_on = [aws_ec2_instance_state.frontend]
 }
 
-#teraget group creation for backend service
+#teraget group creation for frontend service
 resource "aws_lb_target_group" "frontend" {
   name     = "${var.project_name}-${var.environment}-${var.common_tags.component}"
-  port     = 8080
+  port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_ssm_parameter.vpc_id.value
   health_check {
-    path                = "/health"
-    port                = 8080
+    path                = "/"
+    port                = 80
     protocol            = "HTTP"
     healthy_threshold   = 2
     unhealthy_threshold = 2
-    matcher             = "200"
+    matcher             = "200-299"
   }
 }
 
-#aws launch template creation for backend service
+#aws launch template creation for frontend service
 resource "aws_launch_template" "frontend" {
   name          = "${var.project_name}-${var.environment}-${var.common_tags.component}"
   image_id      = aws_ami_from_instance.frontend.id
@@ -96,7 +91,7 @@ resource "aws_autoscaling_group" "frontend" {
   max_size                  = 5
   min_size                  = 1
   desired_capacity          = 1
-  vpc_zone_identifier       = split(",", data.aws_ssm_parameter.private_subnet_ids.value)
+  vpc_zone_identifier       = split(",", data.aws_ssm_parameter.public_subnet_ids.value)
   target_group_arns         = [aws_lb_target_group.frontend.arn]
   instance_refresh {
     strategy = "Rolling"
@@ -127,9 +122,9 @@ resource "aws_autoscaling_group" "frontend" {
 }
 
 
-resource "aws_autoscaling_policy" "backend_scale_up" {
+resource "aws_autoscaling_policy" "frontend_scale_up" {
   name                   = "${var.project_name}-${var.environment}-${var.common_tags.component}-scale-up"
-  autoscaling_group_name = aws_autoscaling_group.backend.name
+  autoscaling_group_name = aws_autoscaling_group.frontend.name
   policy_type            = "TargetTrackingScaling"
 
   target_tracking_configuration {
@@ -140,18 +135,18 @@ resource "aws_autoscaling_policy" "backend_scale_up" {
   }
 }
 
-resource "aws_lb_listener_rule" "backend" {
-  listener_arn = data.aws_ssm_parameter.app_alb_listener_arn.value
+resource "aws_lb_listener_rule" "frontend" {
+  listener_arn = data.aws_ssm_parameter.app_alb_listener_arn_https.value
   priority     = 100 #less the number higher the priority
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.backend.arn
+    target_group_arn = aws_lb_target_group.frontend.arn
   }
 
   condition {
     host_header {
-      values = ["backend.app-${var.environment}.${var.zone_name}"]
+      values = ["web-frontend.app-${var.environment}.${var.zone_name}"]
     }
   }
 }

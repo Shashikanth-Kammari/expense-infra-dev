@@ -32,10 +32,12 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-resource "aws_lb_listener" "http" {
+resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.web_alb.arn
-  port              = "80"
-  protocol          = "HTTP"
+  port              = "443"
+  protocol          = "TLS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = data.aws_ssm_parameter.acm_certificate_arn.value
 
   default_action {
     type = "fixed-response"
