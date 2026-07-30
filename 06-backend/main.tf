@@ -26,7 +26,7 @@ resource "null_resource" "cluster" {
   connection {
     type        = "ssh"
     user        = "ec2-user"
-    password    = ""
+    password    = "Needto_give_password"
     host        = module.backend.private_ip
   }
   provisioner "file" {
