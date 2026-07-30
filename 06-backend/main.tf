@@ -126,3 +126,17 @@ resource "aws_autoscaling_group" "backend" {
     propagate_at_launch = true
   }
 }
+
+
+resource "aws_autoscaling_policy" "backend_scale_up" {
+  name                   = "${var.project_name}-${var.environment}-${var.common_tags.component}-scale-up"
+  autoscaling_group_name = aws_autoscaling_group.backend.name
+  policy_type            = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+    target_value = 50.0
+  }
+}
