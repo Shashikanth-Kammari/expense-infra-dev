@@ -140,3 +140,25 @@ resource "aws_autoscaling_policy" "backend_scale_up" {
     target_value = 50.0
   }
 }
+
+resource "aws_lb_listener_rule" "static" {
+  listener_arn = aws_lb_listener.front_end.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.static.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/static/*"]
+    }
+  }
+
+  condition {
+    host_header {
+      values = ["example.com"]
+    }
+  }
+}
