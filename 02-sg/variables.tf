@@ -42,6 +42,10 @@ variable "vpn_description" {
   default = "Sg group for APP ALB instances"
 }
 
+variable "web_alb_sg_description" {
+  default = "Sg group for WEB ALB instances"
+}
+
 variable "vpn_sg_rules" {
   default = [
     {
