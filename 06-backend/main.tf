@@ -1,7 +1,7 @@
 module "backend" {
   source  = "terraform-aws-modules/ec2-instance/aws"
 
-  name = "${var.project_name}-${var.environment}-backend"
+  name = "${var.project_name}-${var.environment}-${var.common_tags.component}"
 
   instance_type = "t3.micro"
   vpc_security_group_ids = [data.aws_ssm_parameter.backend_sg_id.value]
@@ -14,7 +14,7 @@ module "backend" {
   tags = merge(
     var.common_tags,
     {
-        Name = "${var.project_name}-${var.environment}-backend"
+        Name = "${var.project_name}-${var.environment}-${var.common_tags.component}"
     }
   )
 }
