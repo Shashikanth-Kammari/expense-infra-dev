@@ -141,24 +141,18 @@ resource "aws_autoscaling_policy" "backend_scale_up" {
   }
 }
 
-resource "aws_lb_listener_rule" "static" {
-  listener_arn = aws_lb_listener.front_end.arn
-  priority     = 100
+resource "aws_lb_listener_rule" "backend" {
+  listener_arn = data.aws_ssm_parameter.app_alb_listener_arn.value
+  priority     = 100 #less the number higher the priority
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.static.arn
-  }
-
-  condition {
-    path_pattern {
-      values = ["/static/*"]
-    }
+    target_group_arn = aws_lb_target_group.backend.arn
   }
 
   condition {
     host_header {
-      values = ["example.com"]
+      values = ["backend.app-${var.environment}.${var.zone_name}"]
     }
   }
 }

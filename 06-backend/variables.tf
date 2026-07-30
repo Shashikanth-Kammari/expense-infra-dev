@@ -14,3 +14,7 @@ variable "common_tags" {
     component  = "backend"
   }
 }
+
+variable "zone_name" {
+  default = "shashikanth.online"
+}
