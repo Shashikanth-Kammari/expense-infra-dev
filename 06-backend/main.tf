@@ -55,7 +55,7 @@ resource "aws_ami_from_instance" "backend" {
   depends_on = [aws_ec2_instance_state.backend]
 }
 
-
+#teraget group creation for backend service
 resource "aws_lb_target_group" "backend" {
   name     = "${var.project_name}-${var.environment}-${var.common_tags.component}"
   port     = 8080
@@ -68,5 +68,61 @@ resource "aws_lb_target_group" "backend" {
     healthy_threshold   = 2
     unhealthy_threshold = 2
     matcher             = "200"
+  }
+}
+
+#aws launch template creation for backend service
+resource "aws_launch_template" "backend" {
+  name          = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+  image_id      = aws_ami_from_instance.backend.id
+  instance_initiated_shutdown_behavior = "terminate"
+  instance_type = "t3.micro"
+  update_default_version = true #sets the latest version as default version for the launch template
+  vpc_security_group_ids = [data.aws_ssm_parameter.backend_sg_id.value]
+  tag_specifications {
+    resource_type = "instance"
+    tags = merge(
+      var.common_tags,
+      {
+        Name = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+      }
+    )
+  }
+}
+
+#auto scaling group creation for backend service
+resource "aws_autoscaling_group" "backend" {
+  name                      = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+  max_size                  = 5
+  min_size                  = 1
+  desired_capacity          = 1
+  vpc_zone_identifier       = split(",", data.aws_ssm_parameter.private_subnet_ids.value)
+
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50
+    }
+    triggers = ["launch_template"]
+  }
+  launch_template {
+    id      = aws_launch_template.backend.id
+    version = "$Latest"
+  }
+  target_group_arns         = [aws_lb_target_group.backend.arn]
+  health_check_type         = "ELB"
+  health_check_grace_period = 60
+  tag {
+    key                 = "Name"
+    value               = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+    propagate_at_launch = true
+  }
+  timeouts {
+    delete = "15m"
+  } 
+  tag {
+    key                 = "Project"
+    value               = "${project_name}"
+    propagate_at_launch = true
   }
 }
