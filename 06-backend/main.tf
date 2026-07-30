@@ -18,7 +18,7 @@ module "backend" {
   )
 }
 
-resource "null_resource" "cluster" {
+resource "null_resource" "backend" {
   # Changes to any instance of the cluster requires re-provisioning
   triggers = {
     instance_ids = module.backend.instance_id
@@ -30,7 +30,15 @@ resource "null_resource" "cluster" {
     host        = module.backend.private_ip
   }
   provisioner "file" {
-    source      = "backend.sh"
-    destination = "/tmp/backend.sh"
+    source      = "${var.common_tags.component}.sh"
+    destination = "/tmp/${var.common_tags.component}.sh"
   }
-}
+
+
+  provisioner "remote-exec" {
+      inline = [
+        "chmod +x /tmp/${var.common_tags.component}.sh",
+        "sudo sh /tmp/${var.common_tags.component}.sh ${var.common_tags.component} ${var.environment}"
+      ]
+    }
+}  
