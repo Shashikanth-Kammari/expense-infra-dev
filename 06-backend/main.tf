@@ -54,3 +54,19 @@ resource "aws_ami_from_instance" "backend" {
   source_instance_id = module.backend.id
   depends_on = [aws_ec2_instance_state.backend]
 }
+
+
+resource "aws_lb_target_group" "backend" {
+  name     = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+  port     = 8080
+  protocol = "HTTP"
+  vpc_id   = data.aws_ssm_parameter.vpc_id.value
+  health_check {
+    path                = "/health"
+    port                = 8080
+    protocol            = "HTTP"
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    matcher             = "200"
+  }
+}
