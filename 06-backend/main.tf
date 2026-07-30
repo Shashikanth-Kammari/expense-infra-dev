@@ -97,7 +97,7 @@ resource "aws_autoscaling_group" "backend" {
   min_size                  = 1
   desired_capacity          = 1
   vpc_zone_identifier       = split(",", data.aws_ssm_parameter.private_subnet_ids.value)
-
+  target_group_arns         = [aws_lb_target_group.backend.arn]
   instance_refresh {
     strategy = "Rolling"
     preferences {
@@ -109,7 +109,6 @@ resource "aws_autoscaling_group" "backend" {
     id      = aws_launch_template.backend.id
     version = "$Latest"
   }
-  target_group_arns         = [aws_lb_target_group.backend.arn]
   health_check_type         = "ELB"
   health_check_grace_period = 60
   tag {
