@@ -32,6 +32,23 @@ resource "aws_lb_listener" "http" {
   }
 }
 
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.web_alb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type = "fixed-response"
+
+    fixed_response {
+      content_type  = "text/html"
+      message_body  = "<h1> This is fised respose from web alb </h1>"
+      status_code   = "200"
+    }
+  
+  }
+}
+
 
 module "records" {
   source  = "terraform-aws-modules/route53/aws//modules/records"
