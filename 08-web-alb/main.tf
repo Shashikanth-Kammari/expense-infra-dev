@@ -26,7 +26,7 @@ resource "aws_lb_listener" "http" {
 
     fixed_response {
       content_type  = "text/html"
-      message_body  = "<h1> This is fised respose from app alb </h1>"
+      message_body  = "<h1> This is fised respose from web alb </h1>"
       status_code   = "200"
     }
   
@@ -46,8 +46,8 @@ module "records" {
       type    = "A"
       allow_overwrite = true
       alies = {
-        name = aws_lb.app_alb.dns_name
-        zone_name = aws_lb.app_alb.zone_id
+        name = aws_lb.web_alb.dns_name
+        zone_name = aws_lb.web_alb.zone_id
       }
     }
   ]
