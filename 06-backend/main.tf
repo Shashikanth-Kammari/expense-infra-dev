@@ -10,11 +10,27 @@ module "backend" {
 
   subnet_id     = local.private_subnet_id
   ami = data.aws_ami.ami_info.id
-  user_data = file("ansible.sh")
   tags = merge(
     var.common_tags,
     {
         Name = "${var.project_name}-${var.environment}-${var.common_tags.component}"
     }
   )
+}
+
+resource "null_resource" "cluster" {
+  # Changes to any instance of the cluster requires re-provisioning
+  triggers = {
+    instance_ids = module.backend.instance_id
+  }
+  connection {
+    type        = "ssh"
+    user        = "ec2-user"
+    password    = ""
+    host        = module.backend.private_ip
+  }
+  provisioner "file" {
+    source      = "backend.sh"
+    destination = "/tmp/backend.sh"
+  }
 }
