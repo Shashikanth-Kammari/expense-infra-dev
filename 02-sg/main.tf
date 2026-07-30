@@ -164,10 +164,20 @@ resource "aws_security_group_rule" "frontend_web_alb" {
   security_group_id = module.frontend.sg_id
 }
 
+
 resource "aws_security_group_rule" "web_alb_public" {
   type              = "ingress"
   from_port         = 80
   to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = module.web_alb.sg_id
+}
+
+resource "aws_security_group_rule" "web_alb_public_https" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = module.web_alb.sg_id
