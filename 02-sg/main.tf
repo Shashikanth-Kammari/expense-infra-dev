@@ -135,15 +135,6 @@ resource "aws_security_group_rule" "backend_bastion" {
   security_group_id = module.backend.sg_id
 }
 
-# Back end accepting form frontend
-resource "aws_security_group_rule" "frontend_public" {
-  type              = "ingress"
-  from_port         = 80
-  to_port           = 80
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = module.frontend.sg_id
-}
 
 resource "aws_security_group_rule" "frontend_public" {
   type              = "ingress"
