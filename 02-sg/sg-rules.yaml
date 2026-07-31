@@ -61,6 +61,21 @@
     source: bastion
     port: 22
 
+  web_alb:
+  - name: web_alb_public
+    desc: web_alb accepting connections from public
+    source: public
+    port: 80
+  - name: web_alb_public
+    desc: web_alb accepting connections from public
+    source: public
+    port: 443
+  vpn:
+  - name: vpn_public  
+    desc: vpn accepting connection from public
+    source: public
+    port: 943, 443, 22, 1194
+  
   bastion:
   - name: bastion_public
     desc: bastion accepting connection from public
