@@ -201,6 +201,15 @@ resource "aws_security_group_rule" "frontend_bastion" {
   security_group_id = module.frontend.sg_id
 }
 
+resource "aws_security_group_rule" "frontend_vpn" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  source_security_group_id = module.vpn.sg_id  #source where you are getting trafic i.e frontend sg id
+  security_group_id = module.frontend.sg_id
+}
+
 
 resource "aws_security_group_rule" "bastion_public" {
   type              = "ingress"
