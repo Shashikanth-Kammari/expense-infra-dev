@@ -1,58 +1,75 @@
 module "frontend" {
   source  = "terraform-aws-modules/ec2-instance/aws"
+  name = "${var.project_name}-${var.environment}-${var.common_tags.Component}"
 
-  name = "${var.project_name}-${var.environment}-${var.common_tags.component}"
-
-  instance_type = "t3.micro"
+  instance_type          = "t3.micro"
   vpc_security_group_ids = [data.aws_ssm_parameter.frontend_sg_id.value]
-
-  # converting string list to list and get first elementelement(split("," , data.aws_ssm_parameter.public_subnet_id.value), 0)
-
-  subnet_id     = local.public_subnet_id
+  # convert StringList to list and get first element
+  subnet_id = local.public_subnet_id
   ami = data.aws_ami.ami_info.id
+  
   tags = merge(
     var.common_tags,
     {
-        Name = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+        Name = "${var.project_name}-${var.environment}-${var.common_tags.Component}"
     }
   )
 }
 
-resource "null_resource" "frontend_delete" {
-  # Changes to any instance of the cluster requires re-provisioning
-  triggers = {
-    instance_ids = module.frontend.instance_id
-  }
 
-  provisioner "file" {
-    source      = "${var.common_tags.component}.sh"
-    destination = "/tmp/${var.common_tags.component}.sh"
-  }
-
-
-  provisioner "local-exec" {
-      command = "aws ec2 terminate-instances --instance-ids ${module.frontend.frontend_id}"
+resource "null_resource" "frontend" {
+    triggers = {
+      instance_id = module.frontend.id # this will be triggered everytime instance is created
     }
-    depends_on = [aws-ami_from_instance.frontend]
-}  
+
+    connection {
+        type     = "ssh"
+        user     = "ec2-user"
+        password = "DevOps321"
+        host     = module.frontend.private_ip
+    }
+
+    provisioner "file" {
+        source      = "${var.common_tags.Component}.sh"
+        destination = "/tmp/${var.common_tags.Component}.sh"
+    }
+
+    provisioner "remote-exec" {
+        inline = [
+            "chmod +x /tmp/${var.common_tags.Component}.sh",
+            "sudo sh /tmp/${var.common_tags.Component}.sh ${var.common_tags.Component} ${var.environment}"
+        ]
+    } 
+}
 
 resource "aws_ec2_instance_state" "frontend" {
   instance_id = module.frontend.id
   state       = "stopped"
-  #stop the server only after when null resource provisioning is completed
-  depends_on = [null_resource.frontend]
+  # stop the serever only when null resource provisioning is completed
+  depends_on = [ null_resource.frontend ]
 }
-
 
 resource "aws_ami_from_instance" "frontend" {
-  name               = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+  name               = "${var.project_name}-${var.environment}-${var.common_tags.Component}"
   source_instance_id = module.frontend.id
-  depends_on = [aws_ec2_instance_state.frontend]
+  depends_on = [ aws_ec2_instance_state.frontend ]
 }
 
-#teraget group creation for frontend service
+resource "null_resource" "frontend_delete" {
+    triggers = {
+      instance_id = module.frontend.id # this will be triggered everytime instance is created
+    }
+
+    provisioner "local-exec" {
+        command = "aws ec2 terminate-instances --instance-ids ${module.frontend.id}"
+    } 
+
+    depends_on = [ aws_ami_from_instance.frontend ]
+}
+
+
 resource "aws_lb_target_group" "frontend" {
-  name     = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+  name     = "${var.project_name}-${var.environment}-${var.common_tags.Component}"
   port     = 80
   protocol = "HTTP"
   vpc_id   = data.aws_ssm_parameter.vpc_id.value
@@ -66,33 +83,43 @@ resource "aws_lb_target_group" "frontend" {
   }
 }
 
-#aws launch template creation for frontend service
 resource "aws_launch_template" "frontend" {
-  name          = "${var.project_name}-${var.environment}-${var.common_tags.component}"
-  image_id      = aws_ami_from_instance.frontend.id
+  name = "${var.project_name}-${var.environment}-${var.common_tags.Component}"
+
+  image_id = aws_ami_from_instance.frontend.id
   instance_initiated_shutdown_behavior = "terminate"
   instance_type = "t3.micro"
-  update_default_version = true #sets the latest version as default version for the launch template
+  update_default_version = true # sets the latest version to default
+
   vpc_security_group_ids = [data.aws_ssm_parameter.frontend_sg_id.value]
+
   tag_specifications {
     resource_type = "instance"
+
     tags = merge(
       var.common_tags,
       {
-        Name = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+        Name = "${var.project_name}-${var.environment}-${var.common_tags.Component}"
       }
     )
   }
 }
 
-#auto scaling group creation for frontend service
+
 resource "aws_autoscaling_group" "frontend" {
-  name                      = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+  name                      = "${var.project_name}-${var.environment}-${var.common_tags.Component}"
   max_size                  = 5
   min_size                  = 1
+  health_check_grace_period = 60
+  health_check_type         = "ELB"
   desired_capacity          = 1
+  target_group_arns = [aws_lb_target_group.frontend.arn]
+  launch_template {
+    id      = aws_launch_template.frontend.id
+    version = "$Latest"
+  }
   vpc_zone_identifier       = split(",", data.aws_ssm_parameter.public_subnet_ids.value)
-  target_group_arns         = [aws_lb_target_group.frontend.arn]
+
   instance_refresh {
     strategy = "Rolling"
     preferences {
@@ -100,44 +127,41 @@ resource "aws_autoscaling_group" "frontend" {
     }
     triggers = ["launch_template"]
   }
-  launch_template {
-    id      = aws_launch_template.frontend.id
-    version = "$Latest"
-  }
-  health_check_type         = "ELB"
-  health_check_grace_period = 60
+
   tag {
     key                 = "Name"
-    value               = "${var.project_name}-${var.environment}-${var.common_tags.component}"
+    value               = "${var.project_name}-${var.environment}-${var.common_tags.Component}"
     propagate_at_launch = true
   }
+
   timeouts {
     delete = "15m"
-  } 
+  }
+
   tag {
     key                 = "Project"
-    value               = "${project_name}"
-    propagate_at_launch = true
+    value               = "${var.project_name}"
+    propagate_at_launch = false
   }
 }
 
-
-resource "aws_autoscaling_policy" "frontend_scale_up" {
-  name                   = "${var.project_name}-${var.environment}-${var.common_tags.component}-scale-up"
-  autoscaling_group_name = aws_autoscaling_group.frontend.name
+resource "aws_autoscaling_policy" "frontend" {
+  name                   = "${var.project_name}-${var.environment}-${var.common_tags.Component}"
   policy_type            = "TargetTrackingScaling"
+  autoscaling_group_name = aws_autoscaling_group.frontend.name
 
   target_tracking_configuration {
     predefined_metric_specification {
       predefined_metric_type = "ASGAverageCPUUtilization"
     }
-    target_value = 50.0
+
+    target_value = 10.0
   }
 }
 
 resource "aws_lb_listener_rule" "frontend" {
-  listener_arn = data.aws_ssm_parameter.app_alb_listener_arn_https.value
-  priority     = 100 #less the number higher the priority
+  listener_arn = data.aws_ssm_parameter.web_alb_listener_arn_https.value
+  priority     = 100 # less number will be first validated
 
   action {
     type             = "forward"
@@ -146,7 +170,7 @@ resource "aws_lb_listener_rule" "frontend" {
 
   condition {
     host_header {
-      values = ["web-frontend.app-${var.environment}.${var.zone_name}"]
+      values = ["web-${var.environment}.${var.zone_name}"]
     }
   }
 }
