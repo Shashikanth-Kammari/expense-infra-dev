@@ -93,7 +93,7 @@ resource "aws_launch_template" "backend" {
 #auto scaling group creation for backend service
 resource "aws_autoscaling_group" "backend" {
   name                      = "${var.project_name}-${var.environment}-${var.common_tags.component}"
-  max_size                  = 5
+  max_size                  = 4
   min_size                  = 1
   desired_capacity          = 1
   vpc_zone_identifier       = split(",", data.aws_ssm_parameter.private_subnet_ids.value)
