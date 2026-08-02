@@ -101,7 +101,7 @@ resource "aws_autoscaling_group" "backend" {
   instance_refresh {
     strategy = "Rolling"
     preferences {
-      min_healthy_percentage = 80
+      min_healthy_percentage = 50
     }
     triggers = ["launch_template"]
   }
