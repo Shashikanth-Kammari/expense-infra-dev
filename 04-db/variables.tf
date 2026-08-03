@@ -15,5 +15,5 @@ variable "common_tags" {
 }
 
 variable "zone_name" {
-  default = "shashikanth.online"
+  default = "shashikanth-devops.online"
 }
