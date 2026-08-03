@@ -26,7 +26,7 @@ resource "null_resource" "backend_delete" {
   connection {
     type        = "ssh"
     user        = "ec2-user"
-    password    = "Needto_give_password"
+    password    = "Need_to_give_password"
     host        = module.backend.private_ip
   }
   # provisioner "file" {
