@@ -29,6 +29,7 @@ pipeline {
                 sh """
                 cd 01-vpc
                 terraform plan
+                terraform fmt
                 """
             }
         }
