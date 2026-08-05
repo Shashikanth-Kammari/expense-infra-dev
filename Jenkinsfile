@@ -70,7 +70,7 @@ pipeline {
             deleteDir()
         }
         success { 
-            echo 'I will run when pipeline is success'
+            echo 'I will run when pipeline is success and completed'
         }
         failure { 
             echo 'I will run when pipeline is failure'
