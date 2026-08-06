@@ -68,7 +68,7 @@ pipeline {
     post { 
         always { 
             echo 'I will always say Hello again!'
-            deleteDir()
+            deleteDir()  #it will delete the workspace after the build run
         }
         success { 
             echo 'I will run when pipeline is success'
