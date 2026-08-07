@@ -244,6 +244,7 @@ resource "aws_security_group_rule" "frontend_default_vpc" {
 }
 
 
+
 # resource "aws_security_group_rule" "frontend_public" {
 #   type              = "ingress"
 #   from_port         = 22
